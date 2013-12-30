@@ -1,10 +1,13 @@
-function something_happened() {
+function something_happened(cb) {
     "use strict";
     chrome.management.getAll(function(result) {
         var cur;
         document.body.innerHTML = 
         'Click "Set" to activate the extension reloader for the selected extension. Click again to undo.<br>' + 
-        'Chrome extensions are alphabetically sorted, unpacked on top. Hover over the rows to see the ID.' +
+        'Chrome extensions are alphabetically sorted, unpacked on top. Hover over the rows to see the ID.<br><br>' +
+        '<strong>Reload on server response.</strong><br>' +
+        '<input type="checkbox" id="serverEnabled" /><input type="text" id="server" value="http://127.0.0.1:1337/"/><br>' +
+        'Send a simple GET request to this address, if the response is "1" then reload, otherwise do nothing.<br>' +
         '<br><table><thead><th colspan="2"></th><th>name &emsp; version</th></tr></thead><tbody>' + 
         result
         .sort(function(x, y) {
@@ -35,6 +38,7 @@ function something_happened() {
                              '\nContinue?')) e.preventDefault(), e.stopPropagation();
             }, false);
         }
+        cb()
     });
 }
 
@@ -43,7 +47,27 @@ chrome.management.onEnabled.addListener(something_happened);
 chrome.management.onInstalled.addListener(something_happened);
 chrome.management.onUninstalled.addListener(something_happened);
 
-something_happened(); // Paint the initial items
+something_happened(function() { // Paint the initial items
+    serverEnabled = document.getElementById("serverEnabled");
+    
+    // Check the checkbox if the setting is in localStorage
+    if (localStorage["serverEnabled"] == "true") {
+        serverEnabled.checked = "checked";
+    }
+
+    // Check to see if the server option is enabled
+    serverEnabled.onclick = function() {
+        if (serverEnabled.checked) {
+            localStorage["serverEnabled"] = true
+        } else {
+            localStorage["serverEnabled"] = false
+        }
+    }
+
+    // Set the server address
+    server = document.getElementById("server");
+    localStorage["server"] = server.value
+}); 
 
 document.body.addEventListener('click', function(event) {
     var but = event.target, tr, tmp, i;
